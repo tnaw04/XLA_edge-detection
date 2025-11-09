@@ -70,25 +70,6 @@ def count_objects(original_img, gray_img, canny_t1, canny_t2, kernel_size, min_a
     cv2.putText(output_image, text, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
     return output_image, closed_edges, object_count
 
-def count_objects_advanced(original_img, gray_img):
-    blurred = cv2.GaussianBlur(gray_img, (7, 7), 0)
-    (T, thresh_inv) = cv2.threshold(blurred, 0, 255, cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)
-    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5))
-    cleaned_mask = cv2.morphologyEx(thresh_inv, cv2.MORPH_OPEN, kernel, iterations=1)
-    cleaned_mask = cv2.morphologyEx(cleaned_mask, cv2.MORPH_CLOSE, kernel, iterations=2)
-    contours, _ = cv2.findContours(cleaned_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    object_count = 0
-    min_area = 100
-    output_image = original_img.copy()
-    for cnt in contours:
-        area = cv2.contourArea(cnt)
-        if area > min_area:
-            object_count += 1
-            cv2.drawContours(output_image, [cnt], -1, (0, 255, 0), 2)
-    text = f"So luong (Otsu): {object_count}"
-    cv2.putText(output_image, text, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
-    return output_image, cleaned_mask, object_count
-
 # =============================================================================
 # PHẦN 3: CÁC HÀM PHÁT HIỆN LÀN ĐƯỜNG (TỪ FILE LaneCanny.py)
 # =============================================================================
@@ -253,13 +234,13 @@ class EdgeDetectionApp:
         self.slider_area.pack(fill=tk.X, padx=10)
 
         tk.Button(frame_controls, text="5. Đếm Vật thể (Canny)", command=self.run_counting, bg='orange').pack(fill=tk.X, padx=10, pady=5)
-        tk.Button(frame_controls, text="6. Đếm (Otsu - So sánh)", command=self.run_counting_advanced, bg='lightblue').pack(fill=tk.X, padx=10, pady=2)
+        # ĐÃ XÓA NÚT SỐ 6 (OTSU)
 
         # --- PHẦN MỚI: LANE DETECTION ---
         lbl_video = tk.Label(frame_controls, text="Chức năng Video", font=("Arial", 14, "bold"), bg='lightgray')
         lbl_video.pack(pady=(20, 5), padx=10)
 
-        btn_lane = tk.Button(frame_controls, text="7. Phát hiện làn đường (Video)", 
+        btn_lane = tk.Button(frame_controls, text="6. Phát hiện làn đường (Video)", 
                              command=self.run_lane_detection_video, bg='lightgreen', font=("Arial", 11, "bold"))
         btn_lane.pack(fill=tk.X, padx=10, pady=10)
 
@@ -299,12 +280,6 @@ class EdgeDetectionApp:
         result_img, _, count = count_objects(self.original_img, self.gray_img, t1, t2, self.slider_kernel.get(), self.slider_area.get())
         self.processed_img = result_img
         self.display_image(self.processed_img, self.panel_processed, f"Kết quả Đếm: {count} vật thể")
-
-    def run_counting_advanced(self):
-        if self.original_img is None: return messagebox.showwarning("Cảnh báo", "Vui lòng tải ảnh trước.")
-        result_img, _, count = count_objects_advanced(self.original_img, self.gray_img)
-        self.processed_img = result_img
-        self.display_image(self.processed_img, self.panel_processed, f"Kết quả Đếm (Otsu): {count} vật thể")
 
     # --- HÀM MỚI: XỬ LÝ VIDEO ---
     def run_lane_detection_video(self):
